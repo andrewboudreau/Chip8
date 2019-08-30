@@ -9,7 +9,7 @@ namespace Chip8
 
         public readonly byte[] Registers = new byte[16];
 
-        public readonly Stack<ushort> Stack = new Stack<ushort>(24);
+        public readonly Stack<ushort> Stack = new Stack<ushort>(16);
 
         public ushort Index { get; set; }
 

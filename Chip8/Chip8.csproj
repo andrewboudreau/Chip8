@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Instruction.cs~RF4a956b0.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Update="ibmlogo.ch8">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
