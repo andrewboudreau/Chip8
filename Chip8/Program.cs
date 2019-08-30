@@ -6,6 +6,7 @@ namespace Chip8
 {
     public class Program
     {
+        const string rom = "ibmlogo.ch8";
         public static void Main()
         {
             Console.WriteLine($"Environment.Version: {System.Environment.Version}");
@@ -15,7 +16,8 @@ namespace Chip8
             var state = new State();
             var chip8 = new VirtualMachine(state);
 
-            chip8.Load("ibmlogo.ch8");
+            var size = chip8.Load(rom);
+            Console.WriteLine($"Loaded '{rom}' as {size:N0} bytes.");
 
             chip8.DumpMemory(512..580);
             chip8.EmulateOne();

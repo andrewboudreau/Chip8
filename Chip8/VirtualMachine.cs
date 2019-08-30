@@ -13,26 +13,21 @@ namespace Chip8
             this.state = state;
         }
 
-        public void Invoke(ushort op)
+        public void Execute(Instruction instruction)
         {
-            var register = (op & 0x0F00) >> 8;
-            var left = (op & 0x00F0) >> 4;
-            var right = (op & 0x000F);
+            Console.WriteLine($"OPCODE=0x{instruction.Value:x4}, IP=0x{state.InstructionPointer:X4}, Index=0x{state.Index:X4}");
 
-            var highnib = op >> 12;
-            Console.WriteLine($"OPCODE=0x{op:x4}, IP=0x{state.InstructionPointer:X4}, Index=0x{state.Index:X4}");
-
-            switch (highnib)
+            switch (instruction.Code)
             {
                 case 0x0:
-                    if ((op & 0X00FF) == 0xE0)
+                    if (instruction.Operand2 == 0xE0)
                     {
                         Console.WriteLine($" CLS");
                         state.Display.Fill(0x0);
                         state.InstructionPointer += 2;
                         break;
                     }
-                    else if ((op & 0X00FF) == 0xEE)
+                    else if (instruction.Operand2 == 0xEE)
                     {
                         Console.WriteLine(" RTS (Return-To-Sender)");
 
@@ -48,11 +43,11 @@ namespace Chip8
                         break;
                     }
 
-                    throw new InvalidOperationException($" register=0x{register:X2} args=0x{right:x2}");
+                    throw new InvalidOperationException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:x2}");
 
                 case 0x1:
-                    Console.WriteLine($"Jump to {op & 0x0FFF} (0x{(ushort)(op & 0x0FFF):X3})");
-                    state.InstructionPointer = (ushort)(op & 0x0FFF);
+                    Console.WriteLine($"Jump to {instruction.Address} (0x{instruction.Address:X3})");
+                    state.InstructionPointer = instruction.Address;
                     break;
 
                 case 0x2:
@@ -60,32 +55,31 @@ namespace Chip8
                 case 0x4:
                 case 0x5:
                     Console.WriteLine($" Not Implemented");
-                    throw new InvalidOperationException($" register=0x{register:X2} args=0x{right:x2}");
                     break;
 
                 case 0x6:
-                    Console.WriteLine($" Updating Register[V{register:X1}]=0x{right:X2}");
-                    state.Registers[register] = (byte)right;
-                    Console.WriteLine($" Updated Register[V{register:X1}]=0x{right:X2}");
+                    Console.WriteLine($" Updating Register[V{instruction.Register:X1}]=0x{instruction.Operand2:X2}");
+                    state.Registers[instruction.Register] = instruction.Operand2;
+                    Console.WriteLine($" Updated Register[V{instruction.Register:X1}]=0x{instruction.Operand2:X2}");
                     state.InstructionPointer += 2;
                     break;
 
                 case 0x7:
-                    Console.WriteLine($" Updating Register[V{register:X1}]={state.Registers[register]}(0x{state.Registers[register]:x2})");
-                    state.Registers[register] += (byte)right;
-                    Console.WriteLine($" Updated Register[V{register:X1}]={state.Registers[register]}(0x{state.Registers[register]:x2})");
+                    Console.WriteLine($" Updating Register[V{instruction.Register:X1}]={state.Registers[instruction.Register]}(0x{state.Registers[instruction.Register]:x2})");
+                    state.Registers[instruction.Register] += instruction.Operand2;
+                    Console.WriteLine($" Updated Register[V{instruction.Register:X1}]={state.Registers[instruction.Register]}(0x{state.Registers[instruction.Register]:x2})");
                     state.InstructionPointer += 2;
                     break;
 
                 case 0x8:
                 case 0x9:
                     Console.WriteLine($" Not Implemented");
-                    throw new InvalidOperationException($" register=0x{register:X2} args=0x{right:x2}");
+                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:x2}");
                     break;
 
                 case 0xA:
                     Console.WriteLine($"  Updating Index=0x{state.Index:X3}");
-                    state.Index = (ushort)(op & 0x0FFF);
+                    state.Index = instruction.Address;
                     Console.WriteLine($"  Updated Index=0x{state.Index:X3}");
                     state.InstructionPointer += 2;
                     break;
@@ -93,22 +87,22 @@ namespace Chip8
                 case 0xB:
                 case 0xC:
                     Console.WriteLine($" Not Implemented");
-                    throw new InvalidOperationException($" register=0x{register:X2} args=0x{right:x2}");
+                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:x2}");
                     break;
 
                 case 0xD:
-                    Console.WriteLine($" Draw (Vx=0x{register:X1}, Vy=0x{left:X1}, N={right:x1} at Memory={state.Index:x3}");
+                    Console.WriteLine($" Draw (Vx=0x{instruction.Register:X1}, Vy=0x{instruction.Operand1:X1}, N={instruction.Operand2:x1} at Memory={state.Index:x3}");
                     state.InstructionPointer += 2;
                     break;
 
                 case 0xE:
                 case 0xF:
                     Console.WriteLine($" Not Implemented");
-                    throw new InvalidOperationException($" register=0x{register:X2} args=0x{right:x2}");
+                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:x2}");
                     break;
 
                 default:
-                    throw new InvalidOperationException($" register=0x{register:X2} args=0x{right:x2}");
+                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:x2}");
             }
 
             Console.WriteLine(string.Empty);
@@ -119,21 +113,20 @@ namespace Chip8
             var high = state.Memory[state.InstructionPointer];
             var low = state.Memory[state.InstructionPointer + 1];
 
-            Invoke((ushort)((high << 8) + low));
+            Execute(new Instruction(high, low));
         }
 
-        internal void Load(string file)
-        {
-            var sizeInBytes = LoadHex(file);
-            state.InstructionPointer = 0x0200;
-
-            Console.WriteLine($"Loaded '{file}' as {sizeInBytes:N0} bytes.");
-        }
-
-        private int LoadHex(string file)
+        /// <summary>
+        /// Loads a rom into memory at 512(0x200).
+        /// </summary>
+        /// <param name="file">The rom file path.</param>
+        /// <returns>The size in bytes of the rom loaded.</returns>
+        /// <remarks>Sets the Instruction Pointer to 512(0x200).</remarks>
+        internal int Load(string file)
         {
             using (var stream = new FileStream(file, FileMode.Open))
             {
+                state.InstructionPointer = 0x0200;
                 return stream.Read(state.Memory.AsSpan()[0x200..]);
             }
         }
@@ -151,7 +144,7 @@ namespace Chip8
                     Console.WriteLine(string.Empty);
                 }
             }
-              
+
             Console.WriteLine(string.Empty);
         }
 
@@ -174,6 +167,31 @@ namespace Chip8
 
             Console.WriteLine(string.Empty);
             Console.WriteLine("".PadLeft(64, '-'));
+        }
+    }
+
+    public ref struct Instruction
+    {
+        public Instruction(byte high, byte low)
+        {
+            Value = (ushort)((high << 8) + low);
+            Code = (byte)(high & 0xF0);
+            Address = (ushort)(Value & 0X0FFF);
+            Register = (byte)(high & 0x0F);
+            Operand1 = (byte)(low & 0xF0);
+            Operand2 = (byte)(low & 0x0F);
+        }
+
+        public ushort Value;
+        public byte Code;
+        public ushort Address;
+        public byte Register;
+        public byte Operand1;
+        public byte Operand2;
+
+        public override string ToString()
+        {
+            return $"0x{Value.ToString("x4").ToUpper()}";
         }
     }
 }
