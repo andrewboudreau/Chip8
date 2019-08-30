@@ -180,6 +180,8 @@ namespace Chip8
             Register = (byte)(high & 0x0F);
             Operand1 = (byte)(low & 0xF0);
             Operand2 = (byte)(low & 0x0F);
+            HighByte = high;
+            LowByte = low;
         }
 
         public ushort Value;
@@ -188,6 +190,8 @@ namespace Chip8
         public byte Register;
         public byte Operand1;
         public byte Operand2;
+        public byte HighByte;
+        public byte LowByte;
 
         public override string ToString()
         {
