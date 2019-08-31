@@ -19,16 +19,25 @@ namespace Chip8
 			var size = chip8.Load(rom);
 			Console.WriteLine($"Loaded '{rom}' as {size:N0} bytes.");
 
-			var dump = chip8.DumpMemoryString(512..612);
-			PrintMemoryDump(dump);
+			PrintMemoryDump(chip8.DumpMemoryString(512..612));
+            PrintRegisterDump(chip8.DumpRegisterString());
 
 			chip8.EmulateOne();
+            chip8.EmulateOne();
+            chip8.EmulateOne();
+            chip8.EmulateOne();
+            chip8.EmulateOne();
+            ///chip8.Render();
 
-			var input = Console.ReadKey();
+            var input = Console.ReadKey(true);
 			while (input.KeyChar != 'q')
 			{
 				chip8.EmulateOne();
-				if (input.KeyChar == 'r')
+
+                PrintMemoryDump(chip8.DumpMemoryString(512..612));
+                PrintRegisterDump(chip8.DumpRegisterString());
+
+                if (input.KeyChar == 'r')
 				{
 					chip8.Render();
 				}
@@ -39,12 +48,15 @@ namespace Chip8
 				}
 
 
-				input = Console.ReadKey();
+				input = Console.ReadKey(true);
 			}
 		}
 
 		public static void PrintMemoryDump(string dump)
 		{
+            var left = Console.CursorLeft;
+            var top = Console.CursorTop;
+
 			var leftpad = 62;
 			var lines = 1;
 			var length = 0;
@@ -64,6 +76,30 @@ namespace Chip8
 
 			Console.SetCursorPosition(leftpad, lines++);
 			Console.WriteLine(string.Empty.PadLeft(length, '-'));
+            Console.SetCursorPosition(left, top);
 		}
-	}
+
+        public static void PrintRegisterDump(string dump)
+        {
+            var left = Console.CursorLeft;
+            var top = Console.CursorTop;
+
+            var leftpad = 62;
+            var lines = 1;
+            var length = 0;
+            var hOffset = 10;
+
+            Console.SetCursorPosition(leftpad, hOffset);
+            foreach (var line in dump.Split("\r\n"))
+            {
+                Console.SetCursorPosition(leftpad, hOffset + lines);
+                Console.WriteLine(line);
+
+                length = Math.Max(length, line.Length);
+                lines++;
+            }
+
+            Console.SetCursorPosition(left, top);
+        }
+    }
 }

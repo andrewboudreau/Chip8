@@ -23,7 +23,7 @@ namespace Chip8
         {
             get
             {
-                return Memory.AsSpan()[0x0F00..0x0FFF];
+                return Memory.AsSpan()[0x0F00..0x1000];
             }
         }
 
@@ -31,7 +31,7 @@ namespace Chip8
         {
             get
             {
-                return Memory.AsSpan()[0xEA0..0xEFF];
+                return Memory.AsSpan()[0xEA0..0xF00];
             }
         }
     }
