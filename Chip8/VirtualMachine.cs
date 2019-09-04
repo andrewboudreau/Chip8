@@ -208,7 +208,7 @@ namespace Chip8
                 case 0xB:
                     // Jumps to the address NNN plus V0.
                     Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tJMI\t#{instruction.NNN:X3}, V0({state.Registers[0]}");
-                    state.InstructionPointer = (short)((ushort)instruction.NNN + (ushort)state.Registers[0]);
+                    state.InstructionPointer = (ushort)((ushort)instruction.NNN + (ushort)state.Registers[0]);
                     break;
 
                 case 0xC:
@@ -228,7 +228,7 @@ namespace Chip8
                     {
                         // xor data from memory into screen memory
                         var line = state.Memory[state.Index + n] << (64 - 8 - x);
-                        state.Display[y + n] ^= state.Memory[state.Index + n] << (64 - 8 - x);
+                        state.Display[y + n] ^= (ulong)state.Memory[state.Index + n] << (64 - 8 - x);
 
                         // todo: Wrap pixels around edges of screen
                         // todo: Set VF if pixels are toggled
@@ -372,8 +372,8 @@ namespace Chip8
                 var dd = (ulong)state.Display[y];
                 var ee = Convert.ToString((long)dd, 2);
 
-                var line = Convert.ToString(state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' ');
-                sb.AppendLine(Convert.ToString(state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' '));
+                var line = Convert.ToString((long)state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' ');
+                sb.AppendLine(Convert.ToString((long)state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' '));
             }
 
             return sb.ToString().Trim('\r', '\n');

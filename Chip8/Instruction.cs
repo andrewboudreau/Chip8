@@ -19,9 +19,9 @@
         public byte HighByte;
         public byte LowByte;
 
-        public short Value => (short)((HighByte << 8) + LowByte);
+        public ushort Value => (ushort)((HighByte << 8) + LowByte);
 
-        public short Address => (short)(Value & 0X0FFF);
+        public ushort Address => (ushort)(Value & 0X0FFF);
 
         public byte Code => Nibs[0];
 
@@ -37,7 +37,7 @@
 
         public byte NN => LowByte;
 
-        public short NNN => (short)(((HighByte << 8) + LowByte) & 0X0FFF);
+        public ushort NNN => (ushort)(((HighByte << 8) + LowByte) & 0X0FFF);
 
 
         public override string ToString()

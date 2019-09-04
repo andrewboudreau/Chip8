@@ -12,28 +12,28 @@ namespace Chip8
 
         public byte StackPointer { get; set; } = 0;
 
-        public short Index { get; set; }
+        public ushort Index { get; set; }
 
-        public short InstructionPointer { get; set; }
+        public ushort InstructionPointer { get; set; }
 
         public byte DelayTimer { get; set; }
 
         public byte SoundTimer { get; set; }
 
 
-        public Span<long> Display
+        public Span<ulong> Display
         {
             get
             {
-                return MemoryMarshal.Cast<byte, long>(Memory.AsSpan()[0x0F00..0x1000]);
+                return MemoryMarshal.Cast<byte, ulong>(Memory.AsSpan()[0x0F00..0x1000]);
             }
         }
 
-        public Span<short> Stack
+        public Span<ushort> Stack
         {
             get
             {
-                return MemoryMarshal.Cast<byte, short>(Memory.AsSpan()[0xEA0..0xF00]);
+                return MemoryMarshal.Cast<byte, ushort>(Memory.AsSpan()[0xEA0..0xF00]);
             }
         }
     }
