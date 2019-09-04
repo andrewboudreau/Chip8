@@ -7,9 +7,9 @@ namespace Chip8
     public class Program
     {
         const string rom1 = "ibmlogo.ch8";
-        const string rom4 = "bouncy.ch8";
+        const string romd = "bouncy.ch8";
         const string rom = "test_opcode.ch8";
-        const string rom5 = "maze.ch8";
+        const string roms = "BC_test.ch8";
 
 
         public static void Main()

@@ -39,8 +39,8 @@ namespace Chip8
                                 throw new Exception(" Program Halted.");
                             }
 
-                            state.InstructionPointer = state.Stack[state.StackPointer - 1];
                             state.StackPointer--;
+                            state.InstructionPointer = state.Stack[state.StackPointer];
                             state.InstructionPointer += 2;
 
                             break;
@@ -216,14 +216,13 @@ namespace Chip8
 
                 case 0xD:
                     // Draw sprite for memory location to screen memory at X,Y screen coordinates.
-                    var x = state.Registers[instruction.Nibs[1]];
-                    var y = state.Registers[instruction.Nibs[2]];
+                    var x = state.Registers[instruction.X];
+                    var y = state.Registers[instruction.Y];
 
-                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tDRW\tV{instruction.Nibs[1]:X1}({x}), V{instruction.Nibs[2]:X1}({y}), {instruction.Nibs[3]}");
-                    for (var n = 0; n < instruction.Nibs[3]; n++)
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tDRW\tV{instruction.X:X1}({x}), V{instruction.Y:X1}({y}), {instruction.Nibs[3]}");
+                    for (var n = 0; n < instruction.N; n++)
                     {
                         // xor data from memory into screen memory
-                        var line = state.Memory[state.Index + n] << (64 - 8 - x);
                         state.Display[y + n] ^= (ulong)state.Memory[state.Index + n] << (64 - 8 - x);
 
                         // todo: Wrap pixels around edges of screen
@@ -234,13 +233,15 @@ namespace Chip8
                     break;
 
                 case 0xE:
+                    throw new InvalidOperationException($"{instruction.Value:X4} NOT AN INSTRUCTION");
+                    break;
+
                 case 0xF:
                     switch (instruction.NN)
                     {
                         case 0x07:
                             // Sets VX to the value of the delay timer.
                             Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.X:X1}, DELAY");
-                            // Sets the delay timer to VX.
                             state.Registers[instruction.X] = state.DelayTimer;
                             state.InstructionPointer += 2;
                             break;
@@ -248,7 +249,7 @@ namespace Chip8
                         case 0x15:
                             // Sets the delay timer to VX.
                             Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tDELAY, V{instruction.X:X1}");
-                            state.DelayTimer = state.Registers[instruction.X];
+                            state.DelayTimer = 0;//state.Registers[instruction.X];
                             state.InstructionPointer += 2;
                             break;
 
@@ -260,9 +261,8 @@ namespace Chip8
                             break;
 
                         case 0x29:
-                            //FX29	MEM	I=sprite_addr[Vx]	Sets I to the location of the sprite for the character in VX. 
-                            // Characters 0-F (in hexadecimal)
-                            // are represented by a 4x5 font.
+                            // Sets I to the location of the sprite for the character in VX. 
+                            // Characters 0-F (in hexadecimal) are represented by a 4x5 font.
                             Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLDI\tV{instruction.X:X1}({state.Registers[instruction.X]})");
                             state.Index = state.Memory[5 * (int)(state.Registers[instruction.X])];
                             state.InstructionPointer += 2;
@@ -308,8 +308,6 @@ namespace Chip8
                 default:
                     throw new InvalidOperationException($"{instruction.Value:x4} NOT AN INSTRUCTION");
             }
-
-            //Console.WriteLine(string.Empty);
         }
 
         internal void EmulateOne()
@@ -396,13 +394,7 @@ namespace Chip8
         {
             var sb = new StringBuilder();
             for (var y = 0; y < 32; y++)
-            {
-                var dd = (ulong)state.Display[y];
-                var ee = Convert.ToString((long)dd, 2);
-
-                var line = Convert.ToString((long)state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' ');
                 sb.AppendLine(Convert.ToString((long)state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' '));
-            }
 
             return sb.ToString().Trim('\r', '\n');
         }
