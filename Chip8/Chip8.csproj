@@ -25,6 +25,9 @@
     <None Update="ibmlogo1.ch8">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="maze.ch8">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="test_opcode.ch8">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

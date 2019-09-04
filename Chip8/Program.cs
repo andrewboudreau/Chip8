@@ -6,16 +6,16 @@ namespace Chip8
 {
     public class Program
     {
-        const string rom = "ibmlogo1.ch8";
-        const string rom1 = "bouncy.ch8";
-        const string rom2 = "test_opcode.ch8";
-        const string rom3 = "bc_test.ch8";
+        const string rom1 = "ibmlogo.ch8";
+        const string rom4 = "bouncy.ch8";
+        const string rom = "test_opcode.ch8";
+        const string rom5 = "maze.ch8";
 
 
         public static void Main()
         {
             Console.SetWindowSize(Console.WindowWidth, 36);
-            Console.WriteLine($"Window={Console.WindowWidth}, {Console.WindowHeight} BufferWidth={Console.BufferHeight}, {Console.BufferWidth}");
+            Console.WriteLine($"Window={Console.WindowWidth}, {Console.WindowHeight} Buffer={Console.BufferHeight}, {Console.BufferWidth}");
             Console.WriteLine($"Environment.Version: {System.Environment.Version}");
             Console.WriteLine($"RuntimeInformation.FrameworkDescription: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
             Console.WriteLine();
@@ -59,7 +59,30 @@ namespace Chip8
                     Console.Clear();
                     Console.SetCursorPosition(0, 0);
                 }
-                    
+
+                if (input.KeyChar == 'f')
+                {
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                }
+
+                if (input.KeyChar == 't')
+                {
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne(); 
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                    chip8.EmulateOne();
+                }
+
                 input = Console.ReadKey(true);
             }
         }

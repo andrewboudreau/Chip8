@@ -20,8 +20,6 @@ namespace Chip8
 
         public void Execute(Instruction instruction)
         {
-            //Console.WriteLine($"OPCODE={instruction.Value:X4} Code={instruction.Code:X1} IP=0x{state.InstructionPointer:X4} Index=0x{state.Index:X4}");
-
             switch (instruction.Code)
             {
                 case 0x0:
@@ -43,10 +41,12 @@ namespace Chip8
 
                             state.InstructionPointer = state.Stack[state.StackPointer - 1];
                             state.StackPointer--;
+                            state.InstructionPointer += 2;
+
                             break;
 
                         default:
-                            throw new InvalidOperationException($" register=0x{instruction.Register:X2} args=0x{instruction.X:X2}");
+                            throw new InvalidOperationException($" register=0x{instruction.X:X2} args=0x{instruction.X:X2}");
                     }
 
                     break;
@@ -87,7 +87,7 @@ namespace Chip8
                 case 0x5:
                     // Skips the next instruction if VX equals VY.
                     Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSE\tV{instruction.X:X1}({state.Registers[instruction.X]}), V{instruction.Y:X1}({state.Registers[instruction.Y]})");
-                    if (state.Registers[instruction.X] == state.Registers[instruction.Y])
+                    if (state.Registers[instruction.Register] == state.Registers[instruction.Y])
                     {
                         state.InstructionPointer += 2;
                     }
@@ -97,15 +97,15 @@ namespace Chip8
 
                 case 0x6:
                     // Load NN into RX
-                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.Register:X1}, #{instruction.NN:X2}");
-                    state.Registers[instruction.Register] = instruction.NN;
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.X:X1}, #{instruction.NN:X2}");
+                    state.Registers[instruction.X] = instruction.NN;
                     state.InstructionPointer += 2;
                     break;
 
                 case 0x7:
                     // Adds NN to VX. (Carry flag is not changed)
-                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tADD\tV{instruction.Register:X1}, #{instruction.NN:X2}");
-                    state.Registers[instruction.Register] += instruction.NN;
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tADD\tV{instruction.X:X1}, #{instruction.NN:X2}");
+                    state.Registers[instruction.X] += instruction.NN;
                     state.InstructionPointer += 2;
                     break;
 
@@ -137,7 +137,6 @@ namespace Chip8
                             break;
 
                         case 0x4:
-                            // Set Vx = Vx + Vy, set VF = carry.
                             // The values of Vx and Vy are added together. 
                             // If the result is greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. 
                             // Only the lowest 8 bits of the result are kept, and stored in Vx.
@@ -157,8 +156,8 @@ namespace Chip8
 
                         case 0x6:
                             // Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
-                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSHR\tV{instruction.X:X1}, V{instruction.Y:X2}");
-                            state.Registers[0xF] = (byte)(state.Registers[instruction.X] & (1 << 7));
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSHR\tV{instruction.X:X1}");
+                            state.Registers[0xF] = (byte)(state.Registers[instruction.X] & 0x01);
                             state.Registers[instruction.X] = (byte)(state.Registers[instruction.X] >> 1);
                             break;
 
@@ -173,12 +172,9 @@ namespace Chip8
                         case 0xE:
                             // If the most - significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
                             // Then Vx is multiplied by 2.
-                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSHL\tV{instruction.X:X1}, V{instruction.Y:X2}");
-                            state.Registers[0xF] = (byte)(state.Registers[instruction.X] & 0x01);
-                            var f = (byte)(state.Registers[instruction.X] >> 7);
-                            var reg = state.Registers[instruction.X];
-                            var output = (byte)(state.Registers[instruction.X] << 1);
-                            state.Registers[instruction.X] = (byte)(state.Registers[instruction.X] >> 7);
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSHL\tV{instruction.X:X1}");
+                            state.Registers[0xF] = (byte)((state.Registers[instruction.X] & (1 << 7)) >> 7);
+                            state.Registers[instruction.X] = (byte)(state.Registers[instruction.X] << 1);
                             break;
 
                         default:
@@ -208,7 +204,7 @@ namespace Chip8
                 case 0xB:
                     // Jumps to the address NNN plus V0.
                     Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tJMI\t#{instruction.NNN:X3}, V0({state.Registers[0]}");
-                    state.InstructionPointer = (ushort)((ushort)instruction.NNN + (ushort)state.Registers[0]);
+                    state.InstructionPointer = (ushort)(instruction.NNN + state.Registers[0]);
                     break;
 
                 case 0xC:
@@ -262,17 +258,49 @@ namespace Chip8
                             state.Index += state.Registers[instruction.X];
                             state.InstructionPointer += 2;
                             break;
+
                         case 0x29:
                             //FX29	MEM	I=sprite_addr[Vx]	Sets I to the location of the sprite for the character in VX. 
                             // Characters 0-F (in hexadecimal)
                             // are represented by a 4x5 font.
                             Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLDI\tV{instruction.X:X1}({state.Registers[instruction.X]})");
-                            state.Index = state.Memory[5 * state.Registers[instruction.X]];
+                            state.Index = state.Memory[5 * (int)(state.Registers[instruction.X])];
+                            state.InstructionPointer += 2;
+                            break;
+
+                        case 0x33:
+                            // Store BCD representation of Vx in memory locations I, I + 1, and I+2.
+                            // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, 
+                            // the tens digit at location I+1, and the ones digit at location I + 2.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tB, V{instruction.X:X1}({state.Registers[instruction.X]})");
+                            state.Memory[state.Index] = (byte)(state.Registers[instruction.X] / 100);
+                            state.Memory[state.Index + 1] = (byte)((state.Registers[instruction.X] / 10) % 10);
+                            state.Memory[state.Index + 2] = (byte)(state.Registers[instruction.X] % 10);
+                            state.InstructionPointer += 2;
+                            break;
+
+                        case 0x55:
+                            // The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\t[I], V0-V{instruction.X:X1}({state.Registers[instruction.X]})");
+                            for (var n = 0; n <= instruction.X; n++)
+                            {
+                                state.Memory[state.Index + n] = state.Registers[n];
+                            }
+                            state.InstructionPointer += 2;
+                            break;
+
+                        case 0x65:
+                            // The interpreter reads values from memory starting at location I into registers V0 through Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.X:X1}({state.Registers[instruction.X]}), [I]");
+                            for (var n = 0; n <= instruction.X; n++)
+                            {
+                                state.Registers[n] = state.Memory[state.Index + n];
+                            }
                             state.InstructionPointer += 2;
                             break;
 
                         default:
-                            throw new InvalidOperationException($"{instruction.Value:x4} NOT AN INSTRUCTION");
+                            throw new InvalidOperationException($"{instruction.Value:X4} NOT AN INSTRUCTION");
                     }
 
                     break;

@@ -27,8 +27,6 @@
 
         public byte Register => Nibs[1];
         
-        public byte Operand2 => Nibs[3];
-
         public byte X => Nibs[1];
 
         public byte Y => Nibs[2];

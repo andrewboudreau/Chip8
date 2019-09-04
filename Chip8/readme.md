@@ -1,6 +1,7 @@
 ﻿# Resources
 https://github.com/mattmikolay/chip-8/wiki/CHIP%E2%80%908-Technical-Reference
 http://devernay.free.fr/hacks/chip8/chip8def.htm
+https://github.com/massung/CHIP-8/releases
 
 .net
 https://github.com/anuviswan/LearningPoint/tree/master/FeatureExplore
