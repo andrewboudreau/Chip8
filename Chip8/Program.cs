@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Chip8.Screens;
+using System;
 
 namespace Chip8
 {
 	public class Program
 	{
-		public static int RomSlot = 1;
+		public static int Scale = 10;
+
+		public static int RomSlot = 2;
 
 		public static string[] Roms = new[]
 		{
@@ -19,22 +22,17 @@ namespace Chip8
 		{
 			Console.SetWindowSize(Console.WindowWidth, 36);
 			Console.WriteLine($"Window={Console.WindowWidth}, {Console.WindowHeight} Buffer={Console.BufferHeight}, {Console.BufferWidth}");
-			Console.WriteLine($"Environment.Version: {System.Environment.Version}");
+			Console.WriteLine($"Environment.Version: {Environment.Version}");
 			Console.WriteLine($"RuntimeInformation.FrameworkDescription: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
 			Console.WriteLine();
 
 			var state = new State();
-			var chip8 = new VirtualMachine(state);
+			var screen = new SDLScreen(state);
+			var chip8 = new VirtualMachine(state, screen);
 
 			var path = Roms[RomSlot];
 			var size = chip8.Load(path);
 			Console.WriteLine($"Loaded '{path}' as {size:N0} bytes.");
-
-			chip8.EmulateOne();
-			chip8.EmulateOne();
-			chip8.EmulateOne();
-			chip8.EmulateOne();
-			chip8.EmulateOne();
 
 			PrintMemoryDump(chip8.DumpMemoryString(512..612));
 			PrintRegisterDump(chip8.DumpRegisterString());
@@ -42,22 +40,7 @@ namespace Chip8
 			var input = Console.ReadKey(true);
 			while (input.KeyChar != 'q')
 			{
-				chip8.EmulateOne();
-
-				PrintMemoryDump(chip8.DumpMemoryString(512..612));
-				PrintRegisterDump(chip8.DumpRegisterString());
-
-				if (input.KeyChar == 'r')
-				{
-					PrintScreen(chip8.Render());
-				}
-
-				if (input.KeyChar == 'd')
-				{
-					chip8.DumpMemory(512..580);
-				}
-
-				if (input.KeyChar == 'c')
+				if (input.KeyChar == 'c' || Console.CursorTop > 33)
 				{
 					Console.Clear();
 					Console.SetCursorPosition(0, 0);
@@ -86,33 +69,15 @@ namespace Chip8
 					chip8.EmulateOne();
 				}
 
+				PrintMemoryDump(chip8.DumpMemoryString(512..612));
+				PrintRegisterDump(chip8.DumpRegisterString());
+
 				input = Console.ReadKey(true);
 			}
+
+			screen.Dispose();
 		}
 
-		public static void PrintScreen(string dump)
-		{
-			var original = new { Console.CursorLeft, Console.CursorTop };
-
-			var h = 0;
-			var left = ((Console.WindowWidth - 66) / 2) - 1;
-			var top = (Console.WindowHeight - 34) / 2;
-			var totalWidth = 68;
-
-			Console.SetCursorPosition(left, top + h++);
-			Console.WriteLine("".PadLeft(totalWidth, '-'));
-
-			foreach (var line in dump.Split("\r\n"))
-			{
-				Console.SetCursorPosition(left, top + h++);
-				Console.WriteLine($"{(h - 1).ToString().PadLeft(2)}|{line}|");
-			}
-
-			Console.SetCursorPosition(left, top + h++);
-			Console.WriteLine("".PadLeft(totalWidth, '-'));
-
-			Console.SetCursorPosition(original.CursorLeft, original.CursorTop);
-		}
 
 		public static void PrintMemoryDump(string dump)
 		{
