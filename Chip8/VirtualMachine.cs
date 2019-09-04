@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Chip8
 {
     public class VirtualMachine
     {
+        private Random rand = new Random(0);
+
         private readonly State state;
 
         public VirtualMachine(State state)
         {
             this.state = state;
+            LoadFonts();
         }
 
         public void Execute(Instruction instruction)
@@ -21,86 +25,213 @@ namespace Chip8
             switch (instruction.Code)
             {
                 case 0x0:
-                    if (instruction.LowByte == 0xE0)
+                    switch (instruction.NN)
                     {
-                        Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tCLS");
-                        state.Display.Fill(0x0);
-                        state.InstructionPointer += 2;
-                        break;
+                        case 0xE0:
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tCLS");
+                            state.Display.Fill(0x0);
+                            state.InstructionPointer += 2;
+                            break;
+
+                        case 0xEE:
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tRTS");
+
+                            if (state.StackPointer == 0)
+                            {
+                                throw new Exception(" Program Halted.");
+                            }
+
+                            state.InstructionPointer = state.Stack[state.StackPointer - 1];
+                            state.StackPointer--;
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($" register=0x{instruction.Register:X2} args=0x{instruction.X:X2}");
                     }
-                    else if (instruction.LowByte == 0xEE)
-                    {
-                        Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tRTS");
 
-                        if (state.Stack.Count == 0)
-                        {
-                            throw new Exception(" Program Halted.");
-                            //// return;
-                        }
-
-                        Console.WriteLine($" Returning from IP=0x{state.InstructionPointer:X3}");
-                        state.InstructionPointer = state.Stack.Pop();
-                        Console.WriteLine($" Returned to IP=0x{state.InstructionPointer:X3}");
-                        break;
-                    }
-
-                    throw new InvalidOperationException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:X2}");
-
+                    break;
                 case 0x1:
                     Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tJMP\t#{instruction.Address:X3}");
                     state.InstructionPointer = instruction.Address;
                     break;
 
                 case 0x2:
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tCALL\t#{instruction.NNN:X3}");
+                    state.Stack[state.StackPointer] = state.InstructionPointer;
+                    state.StackPointer++;
+                    state.InstructionPointer = instruction.NNN;
+                    break;
+
                 case 0x3:
+                    // Skips the next instruction if VX equals NN.
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSE\tV{instruction.X:X1}({state.Registers[instruction.X]}), #{instruction.NN:X3}");
+                    if (state.Registers[instruction.X] == instruction.NN)
+                    {
+                        state.InstructionPointer += 2;
+                    }
+
+                    state.InstructionPointer += 2;
+                    break;
+
                 case 0x4:
+                    // Skips the next instruction if VX doesn't equal NN.
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSNE\tV{instruction.X:X1}({state.Registers[instruction.X]}), #{instruction.NN:X3}");
+                    if (state.Registers[instruction.X] != instruction.NN)
+                    {
+                        state.InstructionPointer += 2;
+                    }
+
+                    state.InstructionPointer += 2;
+                    break;
+
                 case 0x5:
-                    Console.WriteLine($" Not Implemented");
+                    // Skips the next instruction if VX equals VY.
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSE\tV{instruction.X:X1}({state.Registers[instruction.X]}), V{instruction.Y:X1}({state.Registers[instruction.Y]})");
+                    if (state.Registers[instruction.X] == state.Registers[instruction.Y])
+                    {
+                        state.InstructionPointer += 2;
+                    }
+
+                    state.InstructionPointer += 2;
                     break;
 
                 case 0x6:
-                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.Register:X1}, #{instruction.LowByte:X2}");
-
-                    state.Registers[instruction.Register] = instruction.LowByte;
+                    // Load NN into RX
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.Register:X1}, #{instruction.NN:X2}");
+                    state.Registers[instruction.Register] = instruction.NN;
                     state.InstructionPointer += 2;
                     break;
 
                 case 0x7:
-                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tADD\tV{instruction.Register:X1}, #{instruction.LowByte:X2}");
-                    state.Registers[instruction.Register] += instruction.LowByte;
+                    // Adds NN to VX. (Carry flag is not changed)
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tADD\tV{instruction.Register:X1}, #{instruction.NN:X2}");
+                    state.Registers[instruction.Register] += instruction.NN;
                     state.InstructionPointer += 2;
                     break;
 
                 case 0x8:
+                    switch (instruction.N)
+                    {
+                        case 0x0:
+                            //Stores the value of register Vy in register Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[instruction.X] = state.Registers[instruction.Y];
+                            break;
+
+                        case 0x1:
+                            // Performs a bitwise OR on the values of Vx and Vy, then stores the result in Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tOR\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[instruction.X] |= state.Registers[instruction.Y];
+                            break;
+
+                        case 0x2:
+                            // Performs a bitwise AND on the values of Vx and Vy, then stores the result in Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tAND\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[instruction.X] &= state.Registers[instruction.Y];
+                            break;
+
+                        case 0x3:
+                            // Performs a bitwise XOR on the values of Vx and Vy, then stores the result in Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tAND\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[instruction.X] ^= state.Registers[instruction.Y];
+                            break;
+
+                        case 0x4:
+                            // Set Vx = Vx + Vy, set VF = carry.
+                            // The values of Vx and Vy are added together. 
+                            // If the result is greater than 8 bits (i.e., > 255,) VF is set to 1, otherwise 0. 
+                            // Only the lowest 8 bits of the result are kept, and stored in Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tADD\tV{instruction.X:X1}, V{instruction.Y:X2}(VF={state.Registers[0xF]})");
+                            state.Registers[0xF] = (byte)(state.Registers[instruction.X] + state.Registers[instruction.Y] > 0xFFFF ? 1 : 0);
+                            state.Registers[instruction.X] += state.Registers[instruction.Y];
+                            break;
+
+                        case 0x5:
+                            // VY is subtracted from VX. VF is set to 0 when there's a borrow, and 1 when there isn't.
+                            // If Vx > Vy, then VF is set to 1, otherwise 0.
+                            // Then Vy is subtracted from Vx, and the results stored in Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSUB\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[0xF] = (byte)(state.Registers[instruction.X] > state.Registers[instruction.Y] ? 1 : 0);
+                            state.Registers[instruction.X] -= state.Registers[instruction.Y];
+                            break;
+
+                        case 0x6:
+                            // Stores the least significant bit of VX in VF and then shifts VX to the right by 1.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSHR\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[0xF] = (byte)(state.Registers[instruction.X] & (1 << 7));
+                            state.Registers[instruction.X] = (byte)(state.Registers[instruction.X] >> 1);
+                            break;
+
+                        case 0x7:
+                            // If Vy > Vx, then VF is set to 1, otherwise 0.
+                            // Then Vx is subtracted from Vy, and the results stored in Vx.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSUBN\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[0xF] = (byte)(state.Registers[instruction.Y] > state.Registers[instruction.X] ? 1 : 0);
+                            state.Registers[instruction.X] -= state.Registers[instruction.Y];
+                            break;
+
+                        case 0xE:
+                            // If the most - significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
+                            // Then Vx is multiplied by 2.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSHL\tV{instruction.X:X1}, V{instruction.Y:X2}");
+                            state.Registers[0xF] = (byte)(state.Registers[instruction.X] & 0x01);
+                            var f = (byte)(state.Registers[instruction.X] >> 7);
+                            var reg = state.Registers[instruction.X];
+                            var output = (byte)(state.Registers[instruction.X] << 1);
+                            state.Registers[instruction.X] = (byte)(state.Registers[instruction.X] >> 7);
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"{instruction.Value:x4} NOT AN INSTRUCTION");
+                    }
+
+                    state.InstructionPointer += 2;
+                    break;
+
                 case 0x9:
-                    Console.WriteLine($" Not Implemented");
-                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:X2}");
+                    // Skips the next instruction if VX doesn't equal VY.  
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tSNE\tV{instruction.X:X1}({state.Registers[instruction.X]}), V{instruction.Y:X1}({state.Registers[instruction.Y]})");
+                    if (state.Registers[instruction.X] != state.Registers[instruction.Y])
+                    {
+                        state.InstructionPointer += 2;
+                    }
+
+                    state.InstructionPointer += 2;
                     break;
 
                 case 0xA:
-                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tI, #{instruction.Address:X3}");
-                    state.Index = instruction.Address;
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tI, #{instruction.NNN:X3}");
+                    state.Index = instruction.NNN;
                     state.InstructionPointer += 2;
                     break;
 
                 case 0xB:
+                    // Jumps to the address NNN plus V0.
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tJMI\t#{instruction.NNN:X3}, V0({state.Registers[0]}");
+                    state.InstructionPointer = (short)((ushort)instruction.NNN + (ushort)state.Registers[0]);
+                    break;
+
                 case 0xC:
-                    Console.WriteLine($" Not Implemented");
-                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:X2}");
+                    // register VX = random number AND KK
+                    Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tRND\tV{instruction.X:X1}, #{instruction.NN:x2}");
+                    state.Registers[instruction.X] = (byte)(rand.Next(0, 256) & instruction.NN);
+                    state.InstructionPointer += 2;
                     break;
 
                 case 0xD:
+                    // Draw sprite for memory location to screen memory at X,Y screen coordinates.
                     var x = state.Registers[instruction.Nibs[1]];
                     var y = state.Registers[instruction.Nibs[2]];
 
                     Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tDRW\tV{instruction.Nibs[1]:X1}({x}), V{instruction.Nibs[2]:X1}({y}), {instruction.Nibs[3]}");
                     for (var n = 0; n < instruction.Nibs[3]; n++)
                     {
-                        var offset = (64 * ((y-1) + n)) + (x-1);
-                        Console.WriteLine($"n={n} x={x} y={y} offset%8={offset % 8} offset/8={offset / (float)8} offset={offset} (y+n)={y + n} (8*(y+n))={8 * (y + n)}");
-                        //this clears the stuff that overlaps =(
-                        state.Display[offset / 8] = (byte)(state.Memory[state.Index + n] << (offset % 8));
-                        state.Display[(offset / 8)+1] = (byte)(state.Memory[state.Index + n] >> (offset % 8));
+                        // xor data from memory into screen memory
+                        var line = state.Memory[state.Index + n] << (64 - 8 - x);
+                        state.Display[y + n] ^= state.Memory[state.Index + n] << (64 - 8 - x);
+
+                        // todo: Wrap pixels around edges of screen
+                        // todo: Set VF if pixels are toggled
                     }
 
                     state.InstructionPointer += 2;
@@ -108,12 +239,46 @@ namespace Chip8
 
                 case 0xE:
                 case 0xF:
-                    Console.WriteLine($" Not Implemented");
-                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:X2}");
+                    switch (instruction.NN)
+                    {
+                        case 0x07:
+                            // Sets VX to the value of the delay timer.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tV{instruction.X:X1}, DELAY");
+                            // Sets the delay timer to VX.
+                            state.Registers[instruction.X] = state.DelayTimer;
+                            state.InstructionPointer += 2;
+                            break;
+
+                        case 0x15:
+                            // Sets the delay timer to VX.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLD\tDELAY, V{instruction.X:X1}");
+                            state.DelayTimer = state.Registers[instruction.X];
+                            state.InstructionPointer += 2;
+                            break;
+
+                        case 0x1E:
+                            // Adds VX to I
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tADI\tV{instruction.X:X1}({state.Registers[instruction.X]})");
+                            state.Index += state.Registers[instruction.X];
+                            state.InstructionPointer += 2;
+                            break;
+                        case 0x29:
+                            //FX29	MEM	I=sprite_addr[Vx]	Sets I to the location of the sprite for the character in VX. 
+                            // Characters 0-F (in hexadecimal)
+                            // are represented by a 4x5 font.
+                            Console.WriteLine($"{state.InstructionPointer:X4} - {instruction.Value:X4}\tLDI\tV{instruction.X:X1}({state.Registers[instruction.X]})");
+                            state.Index = state.Memory[5 * state.Registers[instruction.X]];
+                            state.InstructionPointer += 2;
+                            break;
+
+                        default:
+                            throw new InvalidOperationException($"{instruction.Value:x4} NOT AN INSTRUCTION");
+                    }
+
                     break;
 
                 default:
-                    throw new NotImplementedException($" register=0x{instruction.Register:X2} args=0x{instruction.Operand2:X2}");
+                    throw new InvalidOperationException($"{instruction.Value:x4} NOT AN INSTRUCTION");
             }
 
             //Console.WriteLine(string.Empty);
@@ -164,21 +329,21 @@ namespace Chip8
             var buffer = new StringBuilder();
             var line = 0;
 
-            buffer.Append($"| {range.Start.Value:X4} ");
+            buffer.Append($"|{range.Start.Value:X4} ");
             for (var i = range.Start.Value; i < range.End.Value; i++)
             {
                 buffer.Append($"{state.Memory[i]:X2} ");
 
-                if (i % 16 == 0)
+                if ((i + 1) % 16 == 0)
                 {
                     buffer.AppendLine();
-                    buffer.Append($"| {i + (line++ * 16):X4} ");
+                    buffer.Append($"|{i + (line++ * 16):X4} ");
                 }
             }
 
             if ((range.End.Value - range.Start.Value) % 16 != 0)
             {
-                buffer.AppendLine();
+                //buffer.AppendLine();
             }
 
             return buffer.ToString();
@@ -189,20 +354,43 @@ namespace Chip8
             var buffer = new StringBuilder();
 
             buffer.Append($"| Index = #{state.Index:X3} ");
-            buffer.AppendLine($"  IP = #{state.InstructionPointer:X3} ");
+            buffer.AppendLine($"IP = #{state.InstructionPointer:X3} ");
 
-            for (var i = 0; i < 8; i++)
+            for (var i = 0; i < 16; i++)
             {
-                buffer.AppendLine($"| V{i:X1} = #{state.Registers[i]:X2}\tV{i + 8:X1} = #{state.Registers[i + 8]:X2}");
+                buffer.AppendLine($"| V{i:X1} = #{state.Registers[i]:X2}");
             }
 
             return buffer.ToString();
         }
 
-        public void Render()
+        public string Render()
+        {
+            var sb = new StringBuilder();
+            for (var y = 0; y < 32; y++)
+            {
+                var dd = (ulong)state.Display[y];
+                var ee = Convert.ToString((long)dd, 2);
+
+                var line = Convert.ToString(state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' ');
+                sb.AppendLine(Convert.ToString(state.Display[y], 2).PadLeft(64, '0').Replace('1', '█').Replace('0', ' '));
+            }
+
+            return sb.ToString().Trim('\r', '\n');
+        }
+
+        public void RenderToConsole()
+        {
+            foreach (var line in Render().Split("\r\n"))
+            {
+                Console.WriteLine(line);
+            }
+        }
+
+        public void Render3()
         {
             var i = 0;
-            var bitArray = new BitArray(state.Display.ToArray());
+            var bitArray = new BitArray(1, false);
             foreach (var bit in bitArray)
             {
                 Console.Write((bool)bit ? "█" : $"{i % 8}");
@@ -220,7 +408,7 @@ namespace Chip8
             Console.WriteLine(string.Empty.PadLeft(64, '-'));
             var i = 0;
 
-            var bitArray = new BitArray(state.Display.ToArray());
+            var bitArray = new BitArray(1, false);
             Console.Write("0 - ".PadLeft(9, ' '));
             foreach (var bit in bitArray)
             {
@@ -234,6 +422,25 @@ namespace Chip8
 
             Console.WriteLine(string.Empty);
             Console.WriteLine("".PadLeft(64, '-'));
+        }
+
+        public void LoadFonts()
+        {
+            var fonts = new ulong[]
+            {
+                0xF0909090F0206020,
+                0x2070F010F080F0F0,
+                0x10F010F09090F010,
+                0x10F080F010F0F080,
+                0xF090F0F010204040,
+                0xF090F090F0F090F0,
+                0x10F0F090F09090E0,
+                0x90E090E0F0808080,
+                0xF0E0909090E0F080,
+                0xF080F0F080F08080
+            };
+
+            fonts.CopyTo(MemoryMarshal.Cast<byte, ulong>(state.Memory.AsSpan()[0x00..0x50]));
         }
     }
 }

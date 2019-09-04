@@ -4,25 +4,32 @@ using System.Text;
 
 namespace Chip8
 {
-	public class Program
-	{
-		const string rom = "ibmlogo.ch8";
-		public static void Main()
-		{
-			Console.WriteLine($"Environment.Version: {System.Environment.Version}");
-			Console.WriteLine($"RuntimeInformation.FrameworkDescription: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
-			Console.WriteLine();
+    public class Program
+    {
+        const string rom = "ibmlogo1.ch8";
+        const string rom1 = "bouncy.ch8";
+        const string rom2 = "test_opcode.ch8";
+        const string rom3 = "bc_test.ch8";
 
-			var state = new State();
-			var chip8 = new VirtualMachine(state);
 
-			var size = chip8.Load(rom);
-			Console.WriteLine($"Loaded '{rom}' as {size:N0} bytes.");
+        public static void Main()
+        {
+            Console.SetWindowSize(Console.WindowWidth, 36);
+            Console.WriteLine($"Window={Console.WindowWidth}, {Console.WindowHeight} BufferWidth={Console.BufferHeight}, {Console.BufferWidth}");
+            Console.WriteLine($"Environment.Version: {System.Environment.Version}");
+            Console.WriteLine($"RuntimeInformation.FrameworkDescription: {System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}");
+            Console.WriteLine();
 
-			PrintMemoryDump(chip8.DumpMemoryString(512..612));
+            var state = new State();
+            var chip8 = new VirtualMachine(state);
+
+            var size = chip8.Load(rom);
+            Console.WriteLine($"Loaded '{rom}' as {size:N0} bytes.");
+
+            PrintMemoryDump(chip8.DumpMemoryString(512..612));
             PrintRegisterDump(chip8.DumpRegisterString());
 
-			chip8.EmulateOne();
+            chip8.EmulateOne();
             chip8.EmulateOne();
             chip8.EmulateOne();
             chip8.EmulateOne();
@@ -30,64 +37,94 @@ namespace Chip8
             ///chip8.Render();
 
             var input = Console.ReadKey(true);
-			while (input.KeyChar != 'q')
-			{
-				chip8.EmulateOne();
+            while (input.KeyChar != 'q')
+            {
+                chip8.EmulateOne();
 
                 PrintMemoryDump(chip8.DumpMemoryString(512..612));
                 PrintRegisterDump(chip8.DumpRegisterString());
 
                 if (input.KeyChar == 'r')
-				{
-					chip8.Render();
-				}
+                {
+                    PrintScreen(chip8.Render());
+                }
 
-				if (input.KeyChar == 'd')
-				{
-					chip8.DumpMemory(512..580);
-				}
+                if (input.KeyChar == 'd')
+                {
+                    chip8.DumpMemory(512..580);
+                }
+                
+                if (input.KeyChar == 'c')
+                {
+                    Console.Clear();
+                    Console.SetCursorPosition(0, 0);
+                }
+                    
+                input = Console.ReadKey(true);
+            }
+        }
 
+        public static void PrintScreen(string dump)
+        {
+            var original = new { CursorLeft = Console.CursorLeft, CursorTop = Console.CursorTop };
 
-				input = Console.ReadKey(true);
-			}
-		}
+            var h = 0;
+            var left = ((Console.WindowWidth - 66) / 2)-1;
+            var top = (Console.WindowHeight - 34) / 2;
+            var totalWidth = 68;
 
-		public static void PrintMemoryDump(string dump)
-		{
+            Console.SetCursorPosition(left, top + h++);
+            Console.WriteLine("".PadLeft(totalWidth, '-'));
+
+            foreach (var line in dump.Split("\r\n"))
+            {
+                //Console.Write($"{++h} ");
+                Console.SetCursorPosition(left, top + h++);
+                Console.WriteLine($"{(h-1).ToString().PadLeft(2)}|{line}|");
+            }
+
+            Console.SetCursorPosition(left, top + h++);
+            Console.WriteLine("".PadLeft(totalWidth, '-'));
+
+            Console.SetCursorPosition(original.CursorLeft, original.CursorTop);
+        }
+
+        public static void PrintMemoryDump(string dump)
+        {
             var left = Console.CursorLeft;
             var top = Console.CursorTop;
 
-			var leftpad = 62;
-			var lines = 1;
-			var length = 0;
+            var leftpad = 65;
+            var lines = 1;
+            var length = 0;
 
-			Console.SetCursorPosition(leftpad, 0);
-			Console.WriteLine($"|        00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
+            Console.SetCursorPosition(leftpad, 0);
+            Console.WriteLine($"|ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
 
-			foreach (var line in dump.Split("\r\n"))
-			{
-				Console.SetCursorPosition(leftpad, lines);
-				Console.WriteLine(line);
+            foreach (var line in dump.Split("\r\n"))
+            {
+                Console.SetCursorPosition(leftpad, lines);
+                Console.WriteLine(line);
 
 
-				length = Math.Max(length, line.Length);
-				lines++;
-			}
+                length = Math.Max(length, line.Length);
+                lines++;
+            }
 
-			Console.SetCursorPosition(leftpad, lines++);
-			Console.WriteLine(string.Empty.PadLeft(length, '-'));
+            Console.SetCursorPosition(leftpad, lines++);
+            Console.WriteLine(string.Empty.PadLeft(length, '-'));
             Console.SetCursorPosition(left, top);
-		}
+        }
 
         public static void PrintRegisterDump(string dump)
         {
             var left = Console.CursorLeft;
             var top = Console.CursorTop;
 
-            var leftpad = 62;
+            var leftpad = 93;
             var lines = 1;
             var length = 0;
-            var hOffset = 10;
+            var hOffset = 8;
 
             Console.SetCursorPosition(leftpad, hOffset);
             foreach (var line in dump.Split("\r\n"))
