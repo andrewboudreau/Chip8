@@ -16,4 +16,11 @@
     </None>
   </ItemGroup>
 
+
+  <ItemGroup>
+    <None Update="roms\dumps\hires\Hires Test [Tom Swan, 1979].ch8">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
