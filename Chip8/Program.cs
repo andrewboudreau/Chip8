@@ -9,7 +9,7 @@ namespace Chip8
 	{
 		public static int Scale = 10;
 
-		public static int RomSlot = 1;
+		public static int RomSlot = 2;
 
 		public static string[] Roms = new[]
 		{
@@ -36,12 +36,12 @@ namespace Chip8
 			screen.Log = msg => Console.WriteLine(msg);
 
 			var chip8 = new VirtualMachine(state, screen);
-
+            chip8.Pause();
 			var size = chip8.Load(path);
 			Console.WriteLine($"Loaded '{path}' as {size:N0} bytes.");
 
-			PrintMemoryDump(state.DumpMemoryString(512..612));
-			PrintRegisterDump(state.DumpRegisterString());
+            state.RenderMemoryDump(512..612);
+            PrintRegisterDump(state.DumpRegisterString());
 
 			var input = Console.ReadKey(true);
 			while (input.KeyChar != 'q')
@@ -85,41 +85,14 @@ namespace Chip8
 					chip8.ExecuteNext();
 				}
 
-				PrintMemoryDump(state.DumpMemoryString(512..612));
+                chip8.ExecuteNext();
+                state.RenderMemoryDump(512..612);
 				PrintRegisterDump(state.DumpRegisterString());
 
 				input = Console.ReadKey(true);
 			}
 
 			screen.Dispose();
-		}
-
-
-		public static void PrintMemoryDump(string dump)
-		{
-			var left = Console.CursorLeft;
-			var top = Console.CursorTop;
-
-			var leftpad = 65;
-			var lines = 1;
-			var length = 0;
-
-			Console.SetCursorPosition(leftpad, 0);
-			Console.WriteLine($"|ADDR 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F");
-
-			foreach (var line in dump.Split("\r\n"))
-			{
-				Console.SetCursorPosition(leftpad, lines);
-				Console.WriteLine(line);
-
-
-				length = Math.Max(length, line.Length);
-				lines++;
-			}
-
-			Console.SetCursorPosition(leftpad, lines++);
-			Console.WriteLine(string.Empty.PadLeft(length, '-'));
-			Console.SetCursorPosition(left, top);
 		}
 
 		public static void PrintRegisterDump(string dump)
