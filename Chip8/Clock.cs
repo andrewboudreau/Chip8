@@ -5,56 +5,52 @@ using System.Threading.Tasks;
 
 namespace Chip8
 {
-    public class Clock : IDisposable
-    {
-        const int ticksPer500Hz = 20_000;
-        const int ticksPer60Hz = 166_666;
+	public class Clock
+	{
+		// = (TimeSpan.TicksPerSecond / 500)
+		const int ticksPer500Hz = 20_000;
 
-        private readonly Task thread;
-        private readonly Action tick60Hz;
-        private readonly Action tick500Hz;
-        private readonly Stopwatch stopwatch;
+		// = (TimeSpan.TicksPerSecond / 60)
+		const int ticksPer60Hz = 166_666;
 
-        private long last60Hz = 0;
-        private long last500Hz = 0;
+		private readonly Task thread;
+		private readonly Action tick60Hz;
+		private readonly Action tick500Hz;
+		private readonly Stopwatch stopwatch;
 
-        private CancellationTokenSource cancellationTokenSource;
+		private long last60Hz = 0;
+		private long last500Hz = 0;
+		public Clock(Action tick60Hz, Action tick500Hz)
+		{
+			stopwatch = Stopwatch.StartNew();
+			this.tick60Hz = tick60Hz;
+			this.tick500Hz = tick500Hz;
 
-        public Clock(Action tick60Hz, Action tick500Hz, CancellationToken cancellationToken)
-        {
-            cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            stopwatch = Stopwatch.StartNew();
+			Running = true;
+			thread = Task.Run(Loop);
+		}
 
-            this.tick60Hz = tick60Hz;
-            this.tick500Hz = tick500Hz;
+		public bool Running { get; set; }
 
-            thread = Task.Run(Loop, cancellationTokenSource.Token);
-        }
+		private void Loop()
+		{
+			while (Running)
+			{
+				if (stopwatch.ElapsedTicks - last500Hz > ticksPer500Hz)
+				{
+					last500Hz = stopwatch.ElapsedTicks;
+					tick500Hz();
+				}
 
-        public void Dispose()
-        {
-            cancellationTokenSource.Cancel();
-            thread.Wait(TimeSpan.FromMilliseconds(100));
-        }
+				if (stopwatch.ElapsedTicks - last60Hz > ticksPer60Hz)
+				{
+					last60Hz = stopwatch.ElapsedTicks;
+					tick60Hz();
+				}
 
-        private void Loop()
-        {
-            while (!cancellationTokenSource.Token.IsCancellationRequested)
-            {
-                if (stopwatch.ElapsedTicks - last500Hz > ticksPer500Hz)
-                {
-                    last500Hz = stopwatch.ElapsedTicks;
-                    tick500Hz();
-                }
-
-                if (stopwatch.ElapsedTicks - last60Hz > ticksPer60Hz)
-                {
-                    last60Hz = stopwatch.ElapsedTicks;
-                    tick60Hz();
-                }
-
-                Thread.Sleep(TimeSpan.FromTicks(stopwatch.ElapsedTicks - last500Hz));
-            }
-        }
-    }
+				var sleepFor = TimeSpan.FromTicks(stopwatch.ElapsedTicks - last500Hz);
+				Thread.Sleep(sleepFor);
+			}
+		}
+	}
 }

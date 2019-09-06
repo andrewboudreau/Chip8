@@ -6,36 +6,29 @@
 		{
 			HighByte = high;
 			LowByte = low;
-			Nibs = new byte[]
-			{
-				(byte)((HighByte & 0xF0) >> 4),
-				(byte)(HighByte & 0x0F),
-				(byte)((LowByte & 0xF0) >> 4),
-				(byte)(LowByte & 0x0F)
-			};
+			Value = (ushort)((HighByte << 8) + LowByte);
+			Code = (byte)((HighByte & 0xF0) >> 4);
+			X = (byte)(HighByte & 0x0F);
+			Y = (byte)((LowByte & 0xF0) >> 4);
+			N = (byte)(LowByte & 0x0F);
+			NN = LowByte;
+			NNN = (ushort)(((HighByte << 8) + LowByte) & 0X0FFF);
 		}
 
-		public byte[] Nibs;
 		public byte HighByte;
 		public byte LowByte;
 
-		public ushort Value => (ushort)((HighByte << 8) + LowByte);
-
-		public byte Code => Nibs[0];
-
-		public byte X => Nibs[1];
-
-		public byte Y => Nibs[2];
-
-		public byte N => Nibs[3];
-
-		public byte NN => LowByte;
-
-		public ushort NNN => (ushort)(((HighByte << 8) + LowByte) & 0X0FFF);
+		public ushort Value;
+		public byte Code;
+		public byte X;
+		public byte Y;
+		public byte N;
+		public byte NN;
+		public ushort NNN;
 
 		public override string ToString()
 		{
-			return $"0x{Value.ToString("x4").ToUpper()} ";
+			return $"0x{Value.ToString("X4")} ";
 		}
 	}
 }
