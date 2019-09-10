@@ -27,7 +27,7 @@ namespace Chip8
             this.tick60Hz = tick60Hz;
             this.tick500Hz = tick500Hz;
 
-            Running = true;
+            Running = false;
             thread = Task.Run(Loop);
         }
 

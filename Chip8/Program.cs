@@ -13,7 +13,7 @@ namespace Chip8
 
 		public static string[] Roms = new[]
 		{
-            @"roms\bouncy.ch8",
+			@"roms\paint.ch8",
 			@"roms\ibmlogo_top_left.ch8",
 			@"roms\bouncy.ch8",
 			@"roms\BC_test.ch8",
