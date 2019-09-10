@@ -9,11 +9,11 @@ namespace Chip8
 	{
 		public static int Scale = 10;
 
-		public static int RomSlot = 2;
+		public static int RomSlot = 0;
 
 		public static string[] Roms = new[]
 		{
-			@"roms\maze.ch8",
+            @"roms\bouncy.ch8",
 			@"roms\ibmlogo_top_left.ch8",
 			@"roms\bouncy.ch8",
 			@"roms\BC_test.ch8",
