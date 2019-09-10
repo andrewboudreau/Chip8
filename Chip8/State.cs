@@ -34,5 +34,35 @@ namespace Chip8
                 return MemoryMarshal.Cast<byte, ushort>(Memory.AsSpan()[0xEA0..0xF00]);
             }
         }
+
+        public ushort Keys { get; set; }
+
+        public void KeyPress(int key)
+        {
+            if (key < 0 || key > 0xF)
+                throw new InvalidOperationException($"Invalid key pressed, '{key}'.");
+
+            Keys |= (ushort)(1 << key);
+        }
+
+        public void KeyRelease(int key)
+        {
+            if (key < 0 || key > 0xF)
+                throw new InvalidOperationException($"Invalid key released, '{key}'.");
+
+            Keys &= (ushort)~(1 << key);
+        }
+
+        public int GetKey()
+        {
+            for (var i = 0; i <= 0xF; i++)
+            {
+                if ((Keys & (1 << i)) > 0)
+                {
+                    return i;
+                }
+            }
+            return 0;
+        }
     }
 }

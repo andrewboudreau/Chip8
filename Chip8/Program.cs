@@ -9,11 +9,16 @@ namespace Chip8
 	{
 		public static int Scale = 10;
 
-		public static int RomSlot = 0;
+		public static int RomSlot = 1;
 
 		public static string[] Roms = new[]
-		{
-			@"roms\paint.ch8",
+        {
+            @"..\..\..\roms\dumps\games\Pong (1 player).ch8",
+            @"..\..\..\roms\dumps\games\Tetris [Fran Dachille, 1991].ch8",
+            @"..\..\..\roms\dumps\games\Lunar Lander (Udo Pernisz, 1979).ch8",
+            @"roms\graphics.ch8",
+            @"roms\maze.ch8",
+            @"roms\paint.ch8",
 			@"roms\ibmlogo_top_left.ch8",
 			@"roms\bouncy.ch8",
 			@"roms\BC_test.ch8",
@@ -35,8 +40,7 @@ namespace Chip8
 			var screen = new SDLScreen(state, 10);
 			screen.Log = msg => Console.WriteLine(msg);
 
-			var chip8 = new VirtualMachine(state, screen);
-            chip8.Pause();
+			var chip8 = new VirtualMachine(state, screen, true);
 			var size = chip8.Load(path);
 			Console.WriteLine($"Loaded '{path}' as {size:N0} bytes.");
 

@@ -21,13 +21,13 @@ namespace Chip8
         private long last60Hz = 0;
         private long last500Hz = 0;
 
-        public Clock(Action tick60Hz, Action tick500Hz)
+        public Clock(Action tick60Hz, Action tick500Hz, bool running = true)
         {
             stopwatch = Stopwatch.StartNew();
             this.tick60Hz = tick60Hz;
             this.tick500Hz = tick500Hz;
 
-            Running = false;
+            Running = running;
             thread = Task.Run(Loop);
         }
 
@@ -52,7 +52,7 @@ namespace Chip8
                     tick60Hz();
                 }
 
-                var sleepFor = TimeSpan.FromTicks(stopwatch.ElapsedTicks - last500Hz);
+                var sleepFor = TimeSpan.FromTicks(Math.Min(0, stopwatch.ElapsedTicks - last500Hz));
                 Thread.Sleep(sleepFor);
             }
         }

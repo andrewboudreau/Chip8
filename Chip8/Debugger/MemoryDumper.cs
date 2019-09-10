@@ -8,7 +8,6 @@ namespace Chip8.Debugger
         internal static string DumpMemoryString(this State state, Range range)
         {
             var buffer = new StringBuilder();
-            var line = 0;
 
 
 
@@ -107,6 +106,7 @@ namespace Chip8.Debugger
                 buffer.AppendLine($"│ V{i:X1} = #{state.Registers[i]:X2}");
             }
 
+            buffer.AppendLine($"│ Keys = #{Convert.ToString(state.Keys, 2).PadLeft(16, '0')}");
             return buffer.ToString();
         }
     }
