@@ -35,6 +35,9 @@ namespace Chip8
             }
         }
 
+        /// <summary>
+        /// 1-bit for each input 1 if pressed, otherwise 0.
+        /// </summary>
         public ushort Keys { get; set; }
 
         public void KeyPress(int key)

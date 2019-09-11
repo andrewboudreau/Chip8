@@ -24,7 +24,6 @@ namespace Chip8
 
         public void ExecuteNext()
         {
-            //Console.Write($"{state.DumpRegisterString()}");
             var high = state.Memory[state.ProgramCounter];
             var low = state.Memory[state.ProgramCounter + 1];
 
