@@ -13,17 +13,16 @@ namespace Chip8
 
 		public static string[] Roms = new[]
         {
-            @"..\..\..\roms\dumps\games\Pong (1 player).ch8",
-            @"..\..\..\roms\dumps\games\Tetris [Fran Dachille, 1991].ch8",
-            @"..\..\..\roms\dumps\games\Lunar Lander (Udo Pernisz, 1979).ch8",
+            @"roms\games\Connect 4 [David Winter].ch8",
+            @"roms\games\Space Invaders [David Winter].ch8",
+            @"roms\games\Tetris [Fran Dachille, 1991].ch8",
             @"roms\graphics.ch8",
             @"roms\maze.ch8",
             @"roms\paint.ch8",
 			@"roms\ibmlogo_top_left.ch8",
 			@"roms\bouncy.ch8",
 			@"roms\BC_test.ch8",
-			@"roms\test_opcode.ch8",
-			@"roms\dumps\hires\Hires Test [Tom Swan, 1979].ch8"
+			@"roms\test_opcode.ch8"
 		};
 
 		public static void Main()

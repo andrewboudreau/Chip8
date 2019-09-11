@@ -18,8 +18,14 @@
 
 
   <ItemGroup>
-    <None Update="roms\dumps\hires\Hires Test [Tom Swan, 1979].ch8">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    <None Update="roms\games\Connect 4 [David Winter].ch8">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="roms\games\Space Invaders [David Winter].ch8">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="roms\games\Tetris [Fran Dachille, 1991].ch8">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
