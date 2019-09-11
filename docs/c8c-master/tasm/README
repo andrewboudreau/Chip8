@@ -1,2 +1,0 @@
-These ASM files were hand-written to unit test the virtual machine.
-They return 0 if they succeed and 1 if they fail.

@@ -7,7 +7,7 @@ namespace Chip8
 {
     public class Program
     {
-        public static int RomSlot = 1;
+        public static int RomSlot = 7;
         public static bool RunOnStart = true;
 
         public static string[] Roms = new[]
