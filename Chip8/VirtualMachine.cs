@@ -1,5 +1,4 @@
-﻿using Chip8.Debugger;
-using System;
+﻿using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -229,28 +228,36 @@ namespace Chip8
 
                 case 0xD:
                     // Draw sprite for memory location to screen memory at X,Y screen coordinates.
+                    // Sprites are XOR'ed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. 
+                    // If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen.
+                   
                     var x = state.Registers[instruction.X] % 64;
                     var y = state.Registers[instruction.Y] % 32;
+                    var anyPixlesErased = false;
 
                     Console.WriteLine($"{state.ProgramCounter:X4} - {instruction.Value:X4}\tDRW\tV{instruction.X:X1}({x}), V{instruction.Y:X1}({y}), {instruction.N}");
                     for (var n = 0; n < instruction.N; n++)
                     {
-                        // xor data from memory into screen memory
+                        var horz = (y + n) % 32;
+                        var sprite = (ulong)state.Memory[state.Index + n] << (64 - 8 - x);
+
+                        anyPixlesErased |= (sprite & state.ScreenBuffer[horz]) > 0;
+
+                        // Handle any pixesl that wrapped the screen.
                         if (x > (64 - 8))
                         {
-                            state.ScreenBuffer[(y + n) % 32] ^= (ulong)state.Memory[state.Index + n] >> (x - (64 - 8));
-                            state.ScreenBuffer[(y + n) % 32] ^= (ulong)state.Memory[state.Index + n] << (64 - 8 - x);
-                        }
-                        else
-                        {
-                            state.ScreenBuffer[(y + n) % 32] ^= (ulong)state.Memory[state.Index + n] << (64 - 8 - x);
+                            var wrappedSprite = sprite >> (x - (64 - 8));
+                            anyPixlesErased |= (wrappedSprite & state.ScreenBuffer[horz]) > 0;
+                            state.ScreenBuffer[horz] ^= wrappedSprite;
                         }
 
-                        // todo: Set VF if pixels are toggled
+                        // xor data from memory into screen memory
+                        state.ScreenBuffer[horz] ^= sprite;
                     }
 
+                    // Set VF to 1 if any pixels are erased.
+                    state.Registers[0xF] = (byte)(anyPixlesErased ? 1 : 0);
                     state.ProgramCounter += 2;
-
                     screen.Update();
                     break;
 
